@@ -1,0 +1,40 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Node
+node_modules/
+.pnpm-store/
+
+# Svelte / Vite
+.svelte-kit/
+apps/web/build/
+apps/auth-ui/build/
+apps/admin-portal/build/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.age
+*.decrypted.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+
+# Wasm build output
+pkg/
+
+# iOS (Xcode)
+apps/ios/*.xcworkspace/xcuserdata/
+apps/ios/DerivedData/
+
+# Android
+apps/android/.gradle/
+apps/android/local.properties
