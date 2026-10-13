@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package us.keys.v1;
+
+import "us/common/v1/common.proto";
+
+// Key bundle for a user.
+message KeyBundle {
+  bytes kdf_salt = 1;
+  bytes kdf_params = 2; // serialized Argon2 params
+  bytes master_by_pass = 3; // encrypted master key
+  bytes master_by_recovery = 4;
+  uint32 identity_version = 5;
+  bytes x25519_pub = 6;
+  bytes ed25519_pub = 7;
+  bytes x25519_priv_enc = 8; // encrypted
+  bytes ed25519_priv_enc = 9;
+}
+
+// Public keys.
+message PublicKeys {
+  bytes x25519 = 1;
+  bytes ed25519 = 2;
+}

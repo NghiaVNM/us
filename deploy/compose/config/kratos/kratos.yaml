@@ -1,0 +1,82 @@
+version: v1.2.0
+
+dsn: env://DSN
+
+serve:
+  public:
+    base_url: http://auth.us.local/
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3000
+        - http://app.us.local
+  admin:
+    base_url: http://auth-admin.us.local/
+  
+selfservice:
+  default_browser_return_url: http://app.us.local/
+  allowed_return_urls:
+    - http://localhost:3000
+    - http://app.us.local
+
+  methods:
+    password:
+      enabled: true
+    totp:
+      enabled: true
+      config:
+        issuer: Us
+  
+  flows:
+    error:
+      ui_url: http://app.us.local/error
+
+    settings:
+      ui_url: http://app.us.local/settings
+      privileged_session_max_age: 15m
+
+    recovery:
+      enabled: true
+      ui_url: http://app.us.local/recovery
+
+    verification:
+      enabled: true
+      ui_url: http://app.us.local/verification
+
+    logout:
+      after:
+        default_browser_return_url: http://app.us.local/login
+
+    login:
+      ui_url: http://app.us.local/login
+      lifespan: 10m
+
+    registration:
+      ui_url: http://app.us.local/registration
+      lifespan: 10m
+
+log:
+  level: debug
+  format: text
+  leak_sensitive_values: true
+
+secrets:
+  cookie:
+    - dev_cookie_secret_change_in_prod_min_32
+  cipher:
+    - dev_cipher_secret_change_in_prod
+
+hashers:
+  algorithm: bcrypt
+  bcrypt:
+    cost: 8
+
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+courier:
+  smtp:
+    connection_uri: smtp://test:test@mailslurper:1025/?skip_ssl_verify=true

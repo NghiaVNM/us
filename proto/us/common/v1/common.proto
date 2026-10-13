@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package us.common.v1;
+
+// Error response.
+message Error {
+  // Error code (grpc status or custom).
+  string code = 1;
+  // Human-readable message.
+  string message = 2;
+  // Additional details.
+  map<string, string> details = 3;
+}
+
+// UUID as bytes.
+message Uuid {
+  bytes value = 1; // 16 bytes
+}

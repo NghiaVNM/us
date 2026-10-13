@@ -1,0 +1,42 @@
+{
+  "$id": "https://schemas.us.app/identity.schema.json",
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Us Identity",
+  "type": "object",
+  "properties": {
+    "traits": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "title": "Email",
+          "ory.sh/kratos": {
+            "credentials": {
+              "password": {
+                "identifier": true
+              }
+            },
+            "verification": {
+              "via": "email"
+            },
+            "recovery": {
+              "via": "email"
+            }
+          }
+        },
+        "name": {
+          "type": "string",
+          "title": "Name",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": [
+        "email",
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

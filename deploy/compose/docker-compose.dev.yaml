@@ -1,0 +1,193 @@
+services:
+  us-postgres:
+    image: postgres:16-alpine
+    container_name: us-postgres
+    env_file:
+      - env/postgres.env
+    volumes:
+      - us-postgres-data:/var/lib/postgresql/data
+      - ./config/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U us"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - us-net
+    labels:
+      - "traefik.enable=false"
+
+  us-nats:
+    image: nats:2.10-alpine
+    container_name: us-nats
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - ./config/nats/nats.conf:/etc/nats/nats.conf
+      - us-nats-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - us-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nats.rule=Host(`nats.us.local`)"
+      - "traefik.http.routers.nats.entrypoints=web"
+      - "traefik.http.services.nats.loadbalancer.server.port=8222"
+
+  us-garage:
+    image: dxflrs/garage:v1.0.0
+    container_name: us-garage
+    env_file:
+      - env/garage.env
+    volumes:
+      - ./config/garage/garage.toml:/etc/garage.toml
+      - us-garage-data:/var/lib/garage
+    command: ["/garage", "server"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3901/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - us-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.garage-s3.rule=Host(`s3.us.local`)"
+      - "traefik.http.routers.garage-s3.entrypoints=web"
+      - "traefik.http.routers.garage-s3.service=garage-s3"
+      - "traefik.http.services.garage-s3.loadbalancer.server.port=3902"
+      - "traefik.http.routers.garage-admin.rule=Host(`garage.us.local`)"
+      - "traefik.http.routers.garage-admin.entrypoints=web"
+      - "traefik.http.routers.garage-admin.service=garage-admin"
+      - "traefik.http.services.garage-admin.loadbalancer.server.port=3901"
+  
+  us-kratos-migrate:
+    image: oryd/kratos:v1.2
+    container_name: us-kratos-migrate
+    env_file:
+      - env/kratos.env
+    volumes:
+      - ./config/kratos:/etc/config/kratos
+    command: migrate sql -e --yes
+    depends_on:
+      us-postgres:
+        condition: service_healthy
+    networks:
+      - us-net
+    restart: on-failure
+  
+  us-kratos:
+    image: oryd/kratos:v1.2
+    container_name: us-kratos
+    env_file:
+      - env/kratos.env
+    volumes:
+      - ./config/kratos:/etc/config/kratos
+    command: serve -c /etc/config/kratos/kratos.yaml --dev --watch-courier
+    depends_on:
+      us-kratos-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4433/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - us-net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kratos-public.rule=Host(`auth.us.local`)"
+      - "traefik.http.routers.kratos-public.entrypoints=web"
+      - "traefik.http.routers.kratos-public.service=kratos-public"
+      - "traefik.http.services.kratos-public.loadbalancer.server.port=4433"
+      - "traefik.http.routers.kratos-admin.rule=Host(`auth-admin.us.local`)"
+      - "traefik.http.routers.kratos-admin.entrypoints=web"
+      - "traefik.http.routers.kratos-admin.service=kratos-admin"
+      - "traefik.http.services.kratos-admin.loadbalancer.server.port=4434"
+
+  us-hydra-migrate:
+    image: oryd/hydra:v2.2
+    container_name: us-hydra-migrate
+    env_file:
+      - env/hydra.env
+    command: migrate sql -e --yes
+    depends_on:
+      us-postgres:
+        condition: service_healthy
+    networks:
+      - us-net
+    restart: on-failure
+
+  us-hydra:
+    image: oryd/hydra:v2.2
+    container_name: us-hydra
+    env_file:
+      - env/hydra.env
+    command: serve all --dev
+    depends_on:
+      us-hydra-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4444/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - us-net
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.hydra-public.rule=Host(`oauth.us.local`)"
+      - "traefik.http.routers.hydra-public.entrypoints=web"
+      - "traefik.http.routers.hydra-public.service=hydra-public"
+      - "traefik.http.services.hydra-public.loadbalancer.server.port=4444"
+      - "traefik.http.routers.hydra-admin.rule=Host(`oauth-admin.us.local`)"
+      - "traefik.http.routers.hydra-admin.entrypoints=web"
+      - "traefik.http.routers.hydra-admin.service=hydra-admin"
+      - "traefik.http.services.hydra-admin.loadbalancer.server.port=4445"
+
+  us-traefik:
+    image: traefik:v2.11
+    container_name: us-traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--log.level=DEBUG"
+      - "--ping=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: 
+      - us-net
+    restart: unless-stopped
+
+volumes:
+  us-postgres-data:
+    name: us-postgres-data
+  us-nats-data:
+    name: us-nats-data
+  us-garage-data:
+    name: us-garage-data
+
+networks: 
+  us-net:
+    name: us-net
+    driver: bridge
