@@ -3,6 +3,7 @@ resolver  = "2"
 members   = [
   "crates/us-crypto",
   "crates/us-protocol",
+  "crates/us-sync",
   # "crates/*",
   # "services/*",
   # "apps/cli",

@@ -37,3 +37,6 @@ apps/ios/DerivedData/
 # Android
 apps/android/.gradle/
 apps/android/local.properties
+
+# Kiro
+.kiro
