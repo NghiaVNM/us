@@ -4,6 +4,8 @@ members   = [
   "crates/us-crypto",
   "crates/us-protocol",
   "crates/us-sync",
+  "crates/us-service-kit",
+  "services/auth-service",
   # "crates/*",
   # "services/*",
   # "apps/cli",

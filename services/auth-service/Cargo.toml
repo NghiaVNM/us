@@ -1,0 +1,40 @@
+[package]
+name              = "auth-service"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[[bin]]
+name    = "auth-service"
+path    = "src/main.rs"
+
+[dependencies]
+# Internal
+us-service-kit  = { path = "../../crates/us-service-kit" }
+
+# Async
+tokio.workspace = true
+
+# Web framework
+axum.workspace        = true
+tower.workspace       = true
+tower-http.workspace  = true
+
+# Serialization
+serde.workspace       = true
+serde_json.workspace  = true
+
+# HTTP client
+reqwest = { version = "0.12", default-features = false, features = ["json", "cookies", "rustls-tls"] }
+
+# Config
+config.workspace  = true
+
+# Error
+anyhow.workspace    = true
+thiserror.workspace = true
+
+# Tracing
+tracing.workspace = true
+uuid.workspace  = true

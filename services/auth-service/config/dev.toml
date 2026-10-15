@@ -1,0 +1,6 @@
+[server]
+port  = 3001
+
+[kratos]
+public_url  = "http://kratos:4433"
+admin_url   = "http://kratos:4434"
